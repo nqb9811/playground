@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Resampling</title>
+</head>
+
+<body>
+    <canvas id="full" width="200" height="100"></canvas>
+    <br>
+    <br>
+    <canvas id="resample" width="200" height="100"></canvas>
+
+    <script>
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Rainbow color dictionary
+        const rainbow = {
+            red: "#FF0000",
+            orange: "#FF7F00",
+            yellow: "#FFFF00",
+            green: "#00FF00",
+            blue: "#0000FF",
+            indigo: "#4B0082",
+            violet: "#8B00FF"
+        };
+        // Convert to array for easy random selection
+        const rainbowKeys = Object.keys(rainbow);
+        const rainbowValues = Object.values(rainbow);
+        // Generate N random traces and colors
+        const n = 20000;
+        const data = [];
+        for (let i = 0; i < n; i++) {
+            const color = rainbowValues[Math.floor(Math.random() * rainbowValues.length)];
+            data.push({ x0: i, x1: i + 1, color });
+        }
+        console.log('full data length', n);
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Full
+        {
+            const cvs = document.querySelector('#full');
+            const ctx = cvs.getContext('2d');
+            const min = Math.min(...data.map(({ x0 }) => x0));
+            const max = Math.max(...data.map(({ x1 }) => x1));
+            const total = max - min;
+            const scale = cvs.width / total;
+            console.log('scale in full', scale);
+            for (const { x0, x1, color } of data) {
+                const x = Math.ceil((x0 - min) * scale);
+                const w = Math.ceil((x1 - x0) * scale);
+                const y = 0;
+                const h = 100;
+                ctx.beginPath();
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, w, h);
+            }
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Resample
+        {
+            const cvs = document.querySelector('#resample');
+            const ctx = cvs.getContext('2d');
+            const resampledData = [];
+            ////////////////////////////////////////////////////////////////////////////////////////////////
+            // Logic for resampling
+            // {
+            //     const min = Math.min(...data.map(({ x0 }) => x0));
+            //     const max = Math.max(...data.map(({ x1 }) => x1));
+            //     const total = max - min;
+            //     const scale = cvs.width / total;
+            //     // identical rounding behavior to full rendering
+            //     const pixelColors = new Array(cvs.width);
+            //     for (const { x0, x1, color } of data) {
+            //         const x = Math.ceil((x0 - min) * scale);
+            //         const w = Math.ceil((x1 - x0) * scale);
+            //         const xStart = x;
+            //         const xEnd = x + w - 1;
+            //         for (let px = xStart; px <= xEnd && px < cvs.width; px++) {
+            //             if (px >= 0) {
+            //                 pixelColors[px] = color; // last drawn wins
+            //             }
+            //         }
+            //     }
+            //     for (let px = 0; px < pixelColors.length; px++) {
+            //         const color = pixelColors[px];
+            //         if (!color) continue;
+            //         const x0 = min + px / scale;
+            //         const x1 = min + (px + 1) / scale;
+            //         resampledData.push({ x0, x1, color });
+            //     }
+            // }
+            {
+                const min = Math.min(...data.map(({ x0 }) => x0));
+                const max = Math.max(...data.map(({ x1 }) => x1));
+                const total = max - min;
+                const scale = cvs.width / total;
+
+                let lastPx = -1;
+                let lastColor = null;
+
+                for (const { x0, x1, color } of data) {
+                    const x = Math.ceil((x0 - min) * scale);
+                    const w = Math.ceil((x1 - x0) * scale);
+                    const xStart = x;
+                    const xEnd = x + w - 1;
+
+                    for (let px = xStart; px <= xEnd && px < cvs.width; px++) {
+                        if (px < 0) continue;
+
+                        // if pixel changed, push previous one
+                        if (px !== lastPx && lastColor !== null) {
+                            const x0r = min + lastPx / scale;
+                            const x1r = min + (lastPx + 1) / scale;
+                            resampledData.push({ x0: x0r, x1: x1r, color: lastColor });
+                        }
+
+                        lastPx = px;
+                        lastColor = color; // last drawn wins
+                    }
+                }
+
+                // push last one
+                if (lastColor !== null) {
+                    const x0r = min + lastPx / scale;
+                    const x1r = min + (lastPx + 1) / scale;
+                    resampledData.push({ x0: x0r, x1: x1r, color: lastColor });
+                }
+            }
+            console.log('data length after resampling', resampledData.length);
+            ////////////////////////////////////////////////////////////////////////////////////////////////
+            // Have to reuse the same client rendering logic
+            const min = Math.min(...resampledData.map(({ x0 }) => x0));
+            const max = Math.max(...resampledData.map(({ x1 }) => x1));
+            const total = max - min;
+            const scale = cvs.width / total;
+            console.log('scale in resample', scale);
+            for (const { x0, x1, color } of resampledData) {
+                const x = Math.ceil((x0 - min) * scale);
+                const w = Math.ceil((x1 - x0) * scale);
+                const y = 0;
+                const h = 100;
+                ctx.beginPath();
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, w, h);
+            }
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+    </script>
+</body>
+
+</html>
