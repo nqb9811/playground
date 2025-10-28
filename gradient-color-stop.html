@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>CanvasGradient addColorStop() demo</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+            padding: 24px;
+            background: #f6f7fb;
+            color: #111
+        }
+
+        h1 {
+            font-size: 20px;
+            margin-bottom: 8px
+        }
+
+        .row {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        canvas {
+            display: block;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        p.help {
+            margin: 6px 0 0;
+            color: #444;
+            font-size: 13px
+        }
+
+        code {
+            background: #eef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>CanvasGradient.addColorStop() — same-offset vs near-offset</h1>
+
+    <div class="row">
+        <div class="card">
+            <strong>Example A — same offset (0)</strong>
+            <canvas id="cA" width="420" height="80"></canvas>
+            <p class="help">We call <code>addColorStop(0, 'red')</code> then <code>addColorStop(0, 'blue')</code>. The
+                later color (<strong>blue</strong>) appears at the start.</p>
+        </div>
+
+        <div class="card">
+            <strong>Example B — near offsets (0 and 0.00001)</strong>
+            <canvas id="cB" width="420" height="80"></canvas>
+            <p class="help">We call <code>addColorStop(0, 'red')</code> and <code>addColorStop(0.00001, 'blue')</code>.
+                Because offsets are distinct, you'll see a very sharp transition from red to blue near the left edge.
+            </p>
+        </div>
+    </div>
+
+    <div class="card" style="max-width:880px;">
+        <strong>Canvas console output</strong>
+        <pre id="log"
+            style="margin:8px 0 0; padding:8px; background:#111; color:#bfe7ff; border-radius:6px; font-size:13px;">Loading demo...</pre>
+    </div>
+
+    <script>
+        function drawExampleA() {
+            const canvas = document.getElementById('cA');
+            const ctx = canvas.getContext('2d');
+
+            // Create a linear gradient left-to-right
+            const g = ctx.createLinearGradient(0, 0, canvas.width, 0);
+
+            // First stop at offset 0: red
+            g.addColorStop(0, 'red');
+
+            // Second stop at the SAME offset 0: blue -> this will override the previous at offset 0
+            g.addColorStop(0, 'blue');
+
+            // Add an end stop so the gradient covers the whole width
+            g.addColorStop(1, 'white');
+
+            // Fill rectangle
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            return 'Example A: added stops (0, red) then (0, blue) — the visible start color is blue (the last one).';
+        }
+
+        function drawExampleB() {
+            const canvas = document.getElementById('cB');
+            const ctx = canvas.getContext('2d');
+
+            const g = ctx.createLinearGradient(0, 0, canvas.width, 0);
+
+            // Stop at 0: red
+            g.addColorStop(0, 'red');
+
+            // Stop at a very small offset after 0: blue
+            g.addColorStop(0.01, 'blue');
+
+            // End stop
+            g.addColorStop(1, 'white');
+
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            return 'Example B: added stops (0, red) and (0.00001, blue) — distinct stops cause a very sharp transition near the left edge.';
+        }
+
+        // Draw and log results
+        const logEl = document.getElementById('log');
+        try {
+            const a = drawExampleA();
+            const b = drawExampleB();
+            logEl.textContent = a + '\n' + b + '\n\nTip: open DevTools and experiment by changing colors/offsets to observe behavior.';
+        } catch (err) {
+            logEl.textContent = 'Error: ' + String(err);
+        }
+    </script>
+</body>
+
+</html>
