@@ -37,11 +37,11 @@
     <div class="row">
         <div>
             <canvas id="canvasA" width="200" height="200"></canvas>
-            <div class="label">Unrounded</div>
+            <div class="label">Full</div>
         </div>
         <div>
             <canvas id="canvasB" width="200" height="200"></canvas>
-            <div class="label">Rounded (auto)</div>
+            <div class="label">Compress</div>
         </div>
     </div>
 
@@ -53,7 +53,7 @@
             for (let i = 0; i < num; i++) {
                 y[i] = i;
                 let val = Math.random() * 1.2 - 0.1; // [-0.1, 1.1]
-                if (Math.random() < 0.05) val = 0;  // 5% holes
+                if (Math.random() < 0.1) val = 0;  // 10% holes
                 z[i] = val;
             }
             return { y, z };
@@ -87,71 +87,30 @@
             if (!compress) {
                 readTrace = trace;
             } else {
-                // (1)
-
-                // let lastOffset;
-                // // let merge = true;
-                // for (let i = 0; i < trace.y.length; i++) {
-                //     const y = trace.y[i];
-                //     const z = trace.z[i];
-                //     const offset = (y - y0) / (y1 - y0);
-                //     console.log(offset, lastOffset, '--', offset - lastOffset, '--', 1 / ctx.canvas.height);
-                //     if (
-                //         lastOffset !== undefined
-                //         && Math.abs(offset - lastOffset) < (1 / ctx.canvas.height)
-                //         // && merge
-                //     ) {
-                //         readTrace.y[readTrace.y.length - 1] = y;
-                //         readTrace.z[readTrace.z.length - 1] = z;
-                //         // merge = false;
-                //     } else {
-                //         readTrace.y.push(y);
-                //         readTrace.z.push(z);
-                //         // merge = true;
-                //     }
-                //     lastOffset = offset;
-                // }
-
-                // (2)
-
-                // function mergeCluster(cluster) {
-                //     return cluster[cluster.length - 1];
-                // }
-                // const minStep = 1 / ctx.canvas.height;
-                // const merged = [];
-                // let cluster = [0];
-                // for (let i = 1; i < trace.y.length; i++) {
-                //     const prev = trace.y[i - 1];
-                //     const curr = trace.y[i];
-                //     const close = Math.abs(curr.offset - prev.offset) < minStep;
-
-                //     if (close) {
-                //         cluster.push(i);
-                //     } else {
-                //         merged.push(mergeCluster(cluster));
-                //         cluster = [i];
-                //     }
-                // }
-                // for (const i of merged) {
-                //     const y = trace.y[i];
-                //     const z = trace.z[i];
-                //     readTrace.y.push(y);
-                //     readTrace.z.push(z);
-                // }
-
-                // (3)
-
-                const pixelStep = 1 / ctx.canvas.height;
-                let lastPixel = -1;
-
+                const merged = [];
+                const clusterByPx = [];
                 for (let i = 0; i < trace.y.length; i++) {
                     const offset = (trace.y[i] - y0) / (y1 - y0);
-                    const pixelIndex = Math.floor(offset / pixelStep * ctx.canvas.height);
-                    if (pixelIndex !== lastPixel) {
-                        readTrace.y.push(trace.y[i]);
-                        readTrace.z.push(trace.z[i]);
-                        lastPixel = pixelIndex;
+                    const px = Math.round(offset * ctx.canvas.height);
+
+                    // console.log(offset, '--', px);
+
+                    if (clusterByPx[px]) {
+                        clusterByPx[px].push(i);
+                    } else {
+                        clusterByPx[px] = [i];
                     }
+                }
+                for (const cluster of clusterByPx) {
+                    if (cluster) {
+                        merged.push(cluster[cluster.length - 1]);
+                    }
+                }
+                for (const i of merged) {
+                    const y = trace.y[i];
+                    const z = trace.z[i];
+                    readTrace.y.push(y);
+                    readTrace.z.push(z);
                 }
             }
 
@@ -200,7 +159,7 @@
         }
 
         //////////////////////////////////////////////////////////////////
-        const trace = generateTrace(2600);
+        const trace = generateTrace(3000);
         const y0 = Math.min(...trace.y);
         const y1 = Math.max(...trace.y);
 
