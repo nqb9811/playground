@@ -67,15 +67,16 @@
             <strong>Example B — near offsets (0 and 0.00001)</strong>
             <canvas id="cB" width="420" height="80"></canvas>
             <p class="help">We call <code>addColorStop(0, 'red')</code> and <code>addColorStop(0.00001, 'blue')</code>.
-                Because offsets are distinct, you'll see a very sharp transition from red to blue near the left edge.
             </p>
         </div>
-    </div>
 
-    <div class="card" style="max-width:880px;">
-        <strong>Canvas console output</strong>
-        <pre id="log"
-            style="margin:8px 0 0; padding:8px; background:#111; color:#bfe7ff; border-radius:6px; font-size:13px;">Loading demo...</pre>
+        <div class="card">
+            <strong>Example C — same offset (0.5)</strong>
+            <canvas id="cC" width="420" height="80"></canvas>
+            <p class="help">We call <code>addColorStop(0, 'green')</code>, then <code>addColorStop(0.5, 'red')</code>
+                and <code>addColorStop(0.5, 'blue')</code>.
+            </p>
+        </div>
     </div>
 
     <script>
@@ -98,8 +99,6 @@
             // Fill rectangle
             ctx.fillStyle = g;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            return 'Example A: added stops (0, red) then (0, blue) — the visible start color is blue (the last one).';
         }
 
         function drawExampleB() {
@@ -119,19 +118,34 @@
 
             ctx.fillStyle = g;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            return 'Example B: added stops (0, red) and (0.00001, blue) — distinct stops cause a very sharp transition near the left edge.';
         }
 
-        // Draw and log results
-        const logEl = document.getElementById('log');
-        try {
-            const a = drawExampleA();
-            const b = drawExampleB();
-            logEl.textContent = a + '\n' + b + '\n\nTip: open DevTools and experiment by changing colors/offsets to observe behavior.';
-        } catch (err) {
-            logEl.textContent = 'Error: ' + String(err);
+        function drawExampleC() {
+            const canvas = document.getElementById('cC');
+            const ctx = canvas.getContext('2d');
+
+            const g = ctx.createLinearGradient(0, 0, canvas.width, 0);
+
+            // Stop at 0: green
+            g.addColorStop(0, 'green');
+
+            // Stop at 0.5: red
+            g.addColorStop(0.5, 'red');
+
+            // Stop at 0.5: blue
+            g.addColorStop(0.5, 'blue');
+
+            // End stop
+            g.addColorStop(1, 'white');
+
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
+
+        // Draw
+        drawExampleA();
+        drawExampleB();
+        drawExampleC();
     </script>
 </body>
 

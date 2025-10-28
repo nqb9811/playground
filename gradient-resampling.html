@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Gradient Offset Rounding Comparison</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background: #f4f6f8;
+            color: #111;
+            padding: 20px;
+        }
+
+        .row {
+            display: flex;
+            gap: 20px;
+        }
+
+        canvas {
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            image-rendering: pixelated;
+        }
+
+        .label {
+            text-align: center;
+            font-size: 14px;
+            margin-top: 6px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Trace Gradient Comparison (Unrounded vs Rounded Offsets)</h2>
+    <div class="row">
+        <div>
+            <canvas id="canvasA" width="200" height="200"></canvas>
+            <div class="label">Unrounded</div>
+        </div>
+        <div>
+            <canvas id="canvasB" width="200" height="200"></canvas>
+            <div class="label">Rounded (auto)</div>
+        </div>
+    </div>
+
+    <script>
+        function generateTrace(num = 2600) {
+            const y = new Array(num);
+            const z = new Array(num);
+
+            for (let i = 0; i < num; i++) {
+                y[i] = i;
+                let val = Math.random() * 1.2 - 0.1; // [-0.1, 1.1]
+                if (Math.random() < 0.05) val = 0;  // 5% holes
+                z[i] = val;
+            }
+            return { y, z };
+        }
+
+        function interpolateColor(z) {
+            const clamp = Math.max(0, Math.min(1, z));
+            const r = Math.round(clamp * 255);
+            const g = Math.round((1 - Math.abs(clamp - 0.5) * 2) * 255);
+            const b = Math.round((1 - clamp) * 255);
+            return { color: `rgb(${r},${g},${b})`, indices: [r, g, b] };
+        }
+
+        function deepEqual(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+            return true;
+        }
+
+        //////////////////////////////////////////////////////////////////
+        function setGradientColors(ctx, trace, y0, y1, compress = false) {
+            const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
+            const ranges = { z: { min: 0, max: 1 } };
+            const holeValue = 0;
+            let previous = null;
+
+
+            /////
+            let readTrace = { y: [], z: [] };
+
+            if (!compress) {
+                readTrace = trace;
+            } else {
+                // (1)
+
+                // let lastOffset;
+                // // let merge = true;
+                // for (let i = 0; i < trace.y.length; i++) {
+                //     const y = trace.y[i];
+                //     const z = trace.z[i];
+                //     const offset = (y - y0) / (y1 - y0);
+                //     console.log(offset, lastOffset, '--', offset - lastOffset, '--', 1 / ctx.canvas.height);
+                //     if (
+                //         lastOffset !== undefined
+                //         && Math.abs(offset - lastOffset) < (1 / ctx.canvas.height)
+                //         // && merge
+                //     ) {
+                //         readTrace.y[readTrace.y.length - 1] = y;
+                //         readTrace.z[readTrace.z.length - 1] = z;
+                //         // merge = false;
+                //     } else {
+                //         readTrace.y.push(y);
+                //         readTrace.z.push(z);
+                //         // merge = true;
+                //     }
+                //     lastOffset = offset;
+                // }
+
+                // (2)
+
+                // function mergeCluster(cluster) {
+                //     return cluster[cluster.length - 1];
+                // }
+                // const minStep = 1 / ctx.canvas.height;
+                // const merged = [];
+                // let cluster = [0];
+                // for (let i = 1; i < trace.y.length; i++) {
+                //     const prev = trace.y[i - 1];
+                //     const curr = trace.y[i];
+                //     const close = Math.abs(curr.offset - prev.offset) < minStep;
+
+                //     if (close) {
+                //         cluster.push(i);
+                //     } else {
+                //         merged.push(mergeCluster(cluster));
+                //         cluster = [i];
+                //     }
+                // }
+                // for (const i of merged) {
+                //     const y = trace.y[i];
+                //     const z = trace.z[i];
+                //     readTrace.y.push(y);
+                //     readTrace.z.push(z);
+                // }
+
+                // (3)
+
+                const pixelStep = 1 / ctx.canvas.height;
+                let lastPixel = -1;
+
+                for (let i = 0; i < trace.y.length; i++) {
+                    const offset = (trace.y[i] - y0) / (y1 - y0);
+                    const pixelIndex = Math.floor(offset / pixelStep * ctx.canvas.height);
+                    if (pixelIndex !== lastPixel) {
+                        readTrace.y.push(trace.y[i]);
+                        readTrace.z.push(trace.z[i]);
+                        lastPixel = pixelIndex;
+                    }
+                }
+            }
+
+            console.log(readTrace);
+            /////
+
+            for (let i = 0; i < readTrace.y.length; i++) {
+                let z = readTrace.z[i];
+                const hole = z === holeValue;
+
+                // clamp z
+                if (z < ranges.z.min) z = ranges.z.min;
+                if (z > ranges.z.max) z = ranges.z.max;
+
+                const offset = (readTrace.y[i] - y0) / (y1 - y0);
+                const holeOffset = previous ? previous.offset + (offset - previous.offset) / 2 : 0;
+
+                let color = null;
+                let indices = [];
+
+                if (hole) {
+                    color = 'rgba(0,0,0,0)';
+                    if (previous) {
+                        gradient.addColorStop(holeOffset, previous.color);
+                        gradient.addColorStop(holeOffset, color);
+                    }
+                } else {
+                    const interp = interpolateColor(z);
+                    color = interp.color;
+                    indices = interp.indices;
+                    if (previous && !deepEqual(indices, previous.indices)) {
+                        gradient.addColorStop(offset, previous.color);
+                    } else if (previous && previous.holeValue) {
+                        gradient.addColorStop(holeOffset, 'rgba(0,0,0,0)');
+                        gradient.addColorStop(holeOffset, color);
+                    }
+                }
+
+                if (color) {
+                    gradient.addColorStop(offset, color);
+                    previous = { offset, holeValue: hole, color, indices };
+                }
+            }
+
+            return gradient;
+        }
+
+        //////////////////////////////////////////////////////////////////
+        const trace = generateTrace(2600);
+        const y0 = Math.min(...trace.y);
+        const y1 = Math.max(...trace.y);
+
+        const cA = document.getElementById('canvasA');
+        const cB = document.getElementById('canvasB');
+        const ctxA = cA.getContext('2d');
+        const ctxB = cB.getContext('2d');
+
+        const gradA = setGradientColors(ctxA, trace, y0, y1, false);
+        const gradB = setGradientColors(ctxB, trace, y0, y1, true);
+
+        ctxA.fillStyle = gradA;
+        ctxA.fillRect(0, 0, cA.width, cA.height);
+
+        ctxB.fillStyle = gradB;
+        ctxB.fillRect(0, 0, cB.width, cB.height);
+    </script>
+</body>
+
+</html>
