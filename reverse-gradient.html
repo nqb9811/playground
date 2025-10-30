@@ -45,7 +45,7 @@
             const ranges = {
                 x: { min: x0, max: x1 },
                 y: { min: y0, max: y1 },
-                z: { min: -0.1, max: 1.1 },
+                z: { min: 0, max: 10 },
             };
 
             return { trace, y0, y1, ranges };
@@ -89,14 +89,14 @@
 
                     if (previous && JSON.stringify(indices) !== JSON.stringify(previous.indices)) {
                         gradient.addColorStop(offset, previous.color);
-                    } else if (previous && previous.holeValue) {
+                    } else if (previous && previous.hole) {
                         gradient.addColorStop(holeOffset, 'rgba(0,0,0,0)');
                         gradient.addColorStop(holeOffset, color);
                     }
                 }
 
                 gradient.addColorStop(offset, color);
-                previous = { offset, holeValue, color, indices };
+                previous = { offset, hole, color, indices };
             }
         }
 
@@ -122,14 +122,18 @@
 
             if (w > 0 && h > 0) {
                 console.log('x, y, w, h:', x, y, w, h);
-                const gradient = ctx.createLinearGradient(x, y + h, x, y);
-                setGradientColors(
-                    trace,
-                    ranges,
-                    gradient,
-                    reverseY ? y1 : y0,
-                    reverseY ? y0 : y1,
-                );
+                // const gradient = ctx.createLinearGradient(x, y + h, x, y);
+                // setGradientColors(
+                //     trace,
+                //     ranges,
+                //     gradient,
+                //     reverseY ? y1 : y0,
+                //     reverseY ? y0 : y1,
+                // );
+                const gradient = reverseY
+                    ? ctx.createLinearGradient(x, y, x, y + h) // reversed direction
+                    : ctx.createLinearGradient(x, y + h, x, y);
+                setGradientColors(trace, ranges, gradient, y0, y1);
 
                 ctx.beginPath();
                 ctx.fillStyle = gradient;
