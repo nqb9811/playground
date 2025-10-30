@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Gradient Stop Order Demo</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #fff;
+            color: #000;
+            text-align: center;
+            margin: 40px;
+        }
+
+        canvas {
+            border: 1px solid #ccc;
+            margin: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <p>
+        1: Ascending order (0 → 1)<br>
+        2: Descending order (1 → 0) + same drawing start and end<br>
+        3: Ascending order (0 → 1) + reversed drawing start and end<br>
+    </p>
+
+    <canvas id="canvasAsc" width="400" height="80"></canvas><br>
+    <canvas id="canvasDesc" width="400" height="80"></canvas>
+    <canvas id="canvasAscRev" width="400" height="80"></canvas>
+
+    <script>
+        const w = 400;
+        const h = 80;
+        const x0 = 0, y0 = 0, x1 = w, y1 = 0;
+
+        // --- Ascending stops ---
+        const ascCtx = document.getElementById("canvasAsc").getContext("2d");
+        const gradAsc = ascCtx.createLinearGradient(x0, y0, x1, y1);
+        gradAsc.addColorStop(0.0, "red");
+        gradAsc.addColorStop(0.25, "rgba(0,0,0,0)");
+        gradAsc.addColorStop(0.5, "blue");
+        gradAsc.addColorStop(0.75, "rgba(0,0,0,0)");
+        gradAsc.addColorStop(1.0, "green");
+        ascCtx.fillStyle = gradAsc;
+        ascCtx.fillRect(0, 0, w, h);
+
+        // --- Descending stops ---
+        const descCtx = document.getElementById("canvasDesc").getContext("2d");
+        const gradDesc = descCtx.createLinearGradient(x0, y0, x1, y1);
+        gradDesc.addColorStop(1.0, "red");
+        gradAsc.addColorStop(0.75, "rgba(0,0,0,0)");
+        gradDesc.addColorStop(0.5, "blue");
+        gradAsc.addColorStop(0.25, "rgba(0,0,0,0)");
+        gradDesc.addColorStop(0.0, "green");
+        descCtx.fillStyle = gradDesc;
+        descCtx.fillRect(0, 0, w, h);
+
+        // --- Ascending stops + Rev---
+        const ascRevCtx = document.getElementById("canvasAscRev").getContext("2d");
+        const gradAscRev = ascRevCtx.createLinearGradient(x1, y0, x0, y1);
+        gradAscRev.addColorStop(0.0, "red");
+        gradAscRev.addColorStop(0.25, "rgba(0,0,0,0)");
+        gradAscRev.addColorStop(0.5, "blue");
+        gradAscRev.addColorStop(0.75, "rgba(0,0,0,0)");
+        gradAscRev.addColorStop(1.0, "green");
+        ascRevCtx.fillStyle = gradAscRev;
+        ascRevCtx.fillRect(0, 0, w, h);
+    </script>
+</body>
+
+</html>

@@ -10,10 +10,12 @@
 <body>
     <canvas id="cvs1" width="100" height="200"></canvas>
     <canvas id="cvs2" width="100" height="200"></canvas>
-    <br><br><br>
+    <br><br>
+    <hr>
     <canvas id="cvs3" width="100" height="200"></canvas>
     <canvas id="cvs4" width="100" height="200"></canvas>
-    <br><br><br>
+    <br><br>
+    <hr>
     <canvas id="cvs5" width="100" height="200"></canvas>
     <canvas id="cvs6" width="100" height="200"></canvas>
 
@@ -159,8 +161,9 @@
         {
             const { trace, y0, y1, ranges } = buildTrace(50);
             drawTrace(trace, y0, y1, ranges, document.getElementById('cvs3'));
+            trace.z.reverse();
             // Expect to flip
-            drawTrace(trace, y0, y1, ranges, document.getElementById('cvs4'), false, true);
+            drawTrace(trace, y0, y1, ranges, document.getElementById('cvs4'), false, false);
         }
         {
             const { trace, y0, y1, ranges } = buildTrace(80);
